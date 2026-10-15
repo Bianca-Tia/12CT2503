@@ -17,3 +17,5 @@ Made by Theorem II, Class 12CT2503, NU Bacolod.
 ## License
 
 School project. Third-party libraries and fonts keep their own licenses (Three.js is MIT-licensed, and the fonts are open-licensed through Google Fonts).
+
+**Live view:** https://bianca-tia.github.io/12CT2503/
