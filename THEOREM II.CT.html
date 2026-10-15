@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Theorem II – Newton's Cradle</title>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;700&family=Barlow:wght@400;500;600&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+/* ===== THEME TOKENS: change colors here and the whole app updates ===== */
+:root{--hud:#2ee6ff;--violet:#8b7bff;--azure:#4d8dff;--bg:#000;--panel:#04070d;--ink:#e3f4ff;--mut:#7d9bb3;--line:#13788f;--stage:radial-gradient(ellipse at 50% 115%,#06203a 0%,#000 62%);color-scheme:dark;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:600 15px/1.45 Nunito,system-ui,sans-serif}
+.px{font-family:"Press Start 2P",monospace;letter-spacing:.5px}
+.wrap{max-width:1320px;margin:0 auto;padding:12px;display:grid;gap:12px;grid-template-columns:minmax(0,1fr) 74px 370px;
+grid-template-areas:"top top top" "stage rail side" "bot bot side" "foot foot foot"}
+.box{background:var(--panel);border:3px solid var(--line);border-radius:12px;box-shadow:4px 4px 0 var(--line);padding:12px}
+h2{margin:0 0 10px;font-size:11px;line-height:1.6}
+/* top bar */
+.top{grid-area:top;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.logo{width:38px;height:38px;border-radius:50%;border:3px solid var(--line);flex:none;
+background:radial-gradient(circle,#fff 0 20%,#16161d 21% 31%,transparent 32%),linear-gradient(var(--violet) 0 45%,#16161d 45% 55%,#fff 55%)}
+.top h1{font-size:18px;margin:0;color:var(--violet);text-shadow:2px 2px 0 var(--hud)}
+.top small{display:block;color:var(--mut);font-size:13px}
+.keys{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+button{font:inherit;cursor:pointer;color:#1b1f3b;background:var(--hud);border:3px solid var(--line);border-radius:8px;padding:8px 10px;box-shadow:0 4px 0 var(--line);font-family:"Press Start 2P",monospace;font-size:10px}
+button:active:not(:disabled){transform:translateY(3px);box-shadow:0 1px 0 var(--line)}
+button:disabled{opacity:.45;cursor:not-allowed}
+button.red{background:var(--violet);color:#fff}
+/* stage */
+.stage{grid-area:stage;position:relative;aspect-ratio:16/10;min-height:300px;padding:0;overflow:hidden;background:var(--stage)}
+.stage canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+#st{position:absolute;top:10px;left:10px;font-size:9px;background:var(--violet);color:#fff;border:2px solid var(--line);border-radius:6px;padding:6px 8px}
+#st.live{background:#2eae5b}
+#tip{position:absolute;left:10px;bottom:10px;right:10px;max-width:420px;background:var(--panel);border:3px solid var(--line);border-radius:10px;padding:8px 10px;font-size:13px;cursor:pointer}
+/* rail */
+.rail{grid-area:rail;display:flex;flex-direction:column;gap:10px;align-items:stretch;padding:8px}
+.rail button{font-size:8px;padding:10px 4px}
+/* side: card + controls */
+.side{grid-area:side;display:flex;flex-direction:column;gap:12px;min-height:0}
+.tag{font-size:11px;color:var(--violet);margin:0}
+.card{background:linear-gradient(135deg,#ffe98f,#ffcb05 60%,#f2b800);color:#1b1f3b;border:4px solid var(--line);border-radius:14px;padding:9px;box-shadow:5px 5px 0 var(--line);position:relative;overflow:hidden}
+.card::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(115deg,transparent 35%,rgba(255,255,255,.55) 48%,transparent 60%);background-size:260% 100%;background-position:160% 0;transition:background-position .8s}
+.card:hover::after{background-position:-60% 0}
+.card .in{background:#fffbe8;border:3px solid #b8890a;border-radius:8px;padding:8px}
+.ct{display:flex;justify-content:space-between;align-items:center;font-size:12px}
+.art{height:110px;margin:8px 0;border:3px solid #b8890a;border-radius:6px;background:radial-gradient(circle at 30% 30%,#d9f2ff,#8fc9ff);display:grid;place-items:center}
+.pb{width:64px;height:64px;border-radius:50%;border:4px solid #16161d;display:block;
+background:radial-gradient(circle,#fff 0 18%,#16161d 19% 29%,transparent 30%),linear-gradient(var(--sk,#e63b2e) 0 44%,#16161d 44% 56%,#fff 56%)}
+.card p{margin:6px 0;font-size:12.5px}.card b{font-weight:800}
+.mv{border-top:2px dashed #b8890a;padding-top:6px}
+.ctlbox{overflow:auto;max-height:430px}
+.sl{display:block;margin-bottom:10px;font-size:13px}.sl span{display:flex;justify-content:space-between}
+.sl input{width:100%;accent-color:var(--violet)}
+select{width:100%;margin:4px 0 6px;font:inherit;font-weight:700;padding:5px;border:2px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink)}
+.tools{position:absolute;top:10px;right:10px;display:flex;gap:6px;opacity:0;transition:opacity .2s}
+.stage:hover .tools,.stage.max .tools{opacity:1}@media(hover:none){.tools{opacity:1}}
+.tools button{font-size:8px;padding:6px 8px}
+.stage.max{position:fixed;inset:0;z-index:50;aspect-ratio:auto;border-radius:0}
+.wrap.nopanel{grid-template-columns:minmax(0,1fr) 74px;grid-template-areas:"top top" "stage rail" "bot bot" "foot foot"}
+.nopanel .side{display:none}
+input[type=color]{height:34px;border:2px solid var(--line);border-radius:6px;background:var(--bg);padding:2px}
+input[type=file]{font-size:12px}
+/* bottom */
+.bot{grid-area:bot;display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:12px;padding:0;background:none;border:0;box-shadow:none}
+.dash{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.rd{background:var(--bg);border:2px solid var(--line);border-radius:8px;padding:6px 8px}
+.rd i{display:block;font:normal 8px "Press Start 2P",monospace;color:var(--mut)}
+.rd b{font:400 34px/1.1 VT323,monospace;color:var(--ink)}.rd u{text-decoration:none;font-size:12px;color:var(--mut)}
+.sks{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.sk{display:flex;align-items:center;gap:8px;padding:6px 8px;font-size:8px;text-align:left}
+.sk i{width:26px;height:26px;border-radius:50%;border:2px solid #16161d;flex:none;
+background:radial-gradient(circle,#fff 0 18%,#16161d 19% 28%,transparent 29%),linear-gradient(var(--t) 0 44%,#16161d 44% 56%,#fff 56%)}
+.sk.on{outline:3px solid var(--violet);outline-offset:2px}
+/* footer */
+.foot{grid-area:foot;display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:0;background:none;border:0;box-shadow:none}
+.foot .box{font-size:13px}.foot .px{font-size:10px;line-height:1.7}
+@media (max-width:980px){.wrap{grid-template-columns:1fr;grid-template-areas:"top" "stage" "rail" "bot" "side" "foot"}
+.rail{flex-direction:row}.rail button{flex:1}.bot,.foot{grid-template-columns:1fr}.keys{margin-left:0}}
+/* ===== OBSERVATORY STYLING: navy + gold hairlines, violet/azure accents ===== */
+body{font:400 15px/1.5 Barlow,system-ui,sans-serif}
+.px{font-family:"Chakra Petch",system-ui,sans-serif;letter-spacing:.14em;text-transform:uppercase;font-weight:700}
+h2{font-size:12px}
+.box{border:1px solid var(--line);border-radius:2px;background:linear-gradient(180deg,rgba(46,230,255,.045),transparent 40%),var(--panel);box-shadow:inset 0 0 22px rgba(46,230,255,.05),0 0 14px color-mix(in srgb,var(--bpc,#2ee6ff) 10%,transparent)}
+.top h1{font-size:20px;color:var(--hud);text-shadow:none;letter-spacing:.2em}
+.logo{width:58px;height:38px;border:0;border-radius:0;background:none}
+button{font:700 11px Barlow,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:var(--ink);background:transparent;border:1px solid var(--hud);border-radius:4px;padding:9px 12px;box-shadow:none;transition:background .15s,box-shadow .15s}
+button:hover:not(:disabled){background:color-mix(in srgb,var(--hud) 18%,transparent);box-shadow:0 0 14px color-mix(in srgb,var(--violet) 50%,transparent)}
+button:active:not(:disabled){transform:translateY(1px);box-shadow:none}
+button.red{background:linear-gradient(135deg,var(--violet),var(--azure));color:#fff;border-color:transparent}
+.rail button,.tools button{font-size:10px;padding:8px 6px}
+.tools button{background:color-mix(in srgb,var(--panel) 80%,transparent);backdrop-filter:blur(6px)}
+#st{background:color-mix(in srgb,var(--violet) 85%,#000);border:1px solid var(--hud);border-radius:20px;font-size:10px;padding:5px 12px;color:#fff}
+#st.live{background:#1f9d8a}
+#tip{border:1px solid var(--line);border-radius:6px;background:color-mix(in srgb,var(--panel) 88%,transparent);backdrop-filter:blur(6px)}
+.tag{color:var(--hud)}
+.card{background:var(--panel);color:var(--ink);border:1px solid var(--hud);border-radius:6px;padding:8px;box-shadow:0 0 0 3px var(--bg),0 0 0 4px var(--hud),0 12px 30px rgba(0,0,0,.25)}
+.card .in{background:transparent;border:1px solid color-mix(in srgb,var(--hud) 45%,transparent);border-radius:3px}
+.card .mv{border-top:1px solid color-mix(in srgb,var(--hud) 40%,transparent)}
+.art{border:1px solid color-mix(in srgb,var(--hud) 45%,transparent);border-radius:3px;background:radial-gradient(circle at 50% 40%,#3a2f8f,#0b1d3a)}
+.pb{border:0;width:58px;height:58px;background:radial-gradient(circle at 35% 30%,#fff,var(--sk,#9a78f5) 45%,#1d1b4d);box-shadow:0 0 26px var(--sk,#9a78f5)}
+.rd{background:transparent;border:1px solid color-mix(in srgb,var(--hud) 50%,transparent);border-radius:4px}
+.rd i{font:700 10px Barlow,sans-serif;letter-spacing:.16em;color:var(--hud)}
+.rd b{font:400 28px "Share Tech Mono",monospace;color:var(--ink)}
+.sk{font-size:10px}
+.sk i{border:0;background:radial-gradient(circle at 35% 30%,#fff,var(--t) 55%,#0b1d3a);box-shadow:0 0 10px var(--t)}
+.sk.on{outline:2px solid var(--violet);outline-offset:2px}
+.foot .px{font-size:11px}
+select,input[type=color]{border:1px solid var(--hud);border-radius:4px}
+.stage::before{content:"";position:absolute;inset:0;pointer-events:none;background-image:linear-gradient(color-mix(in srgb,var(--bpc,#2ee6ff) 10%,transparent) 1px,transparent 1px),linear-gradient(90deg,color-mix(in srgb,var(--bpc,#2ee6ff) 10%,transparent) 1px,transparent 1px);background-size:34px 34px;-webkit-mask-image:radial-gradient(ellipse at center,#000 40%,transparent 95%);mask-image:radial-gradient(ellipse at center,#000 40%,transparent 95%)}
+.stage::after{content:"";position:absolute;inset:8px;pointer-events:none;opacity:.8;background:linear-gradient(var(--hud),var(--hud)) 0 0/18px 2px no-repeat,linear-gradient(var(--hud),var(--hud)) 0 0/2px 18px no-repeat,linear-gradient(var(--hud),var(--hud)) 100% 0/18px 2px no-repeat,linear-gradient(var(--hud),var(--hud)) 100% 0/2px 18px no-repeat,linear-gradient(var(--hud),var(--hud)) 0 100%/18px 2px no-repeat,linear-gradient(var(--hud),var(--hud)) 0 100%/2px 18px no-repeat,linear-gradient(var(--hud),var(--hud)) 100% 100%/18px 2px no-repeat,linear-gradient(var(--hud),var(--hud)) 100% 100%/2px 18px no-repeat}
+.stage.v-blueprint{--stage:radial-gradient(ellipse at 50% 110%,color-mix(in srgb,var(--bpc,#2ee6ff) 30%,#02060c) 0%,#00040c 68%)}
+.stage.v-desk{--stage:radial-gradient(ellipse at 50% 20%,#34302c 0%,#0c0a09 75%)}.stage.v-desk::before{opacity:0}
+.stage.v-flat{--stage:#0a0f1c}.stage.v-flat::before{opacity:.5}
+.card .in{max-height:620px;overflow:auto}.card .ct{font-size:15px}
+.art{height:130px}.art svg{width:100%;height:100%}
+.card dl{margin:8px 0 0;font-size:14.5px}.card ul{margin:2px 0 0;padding-left:18px}.card li{margin:3px 0}
+.card dt{font:700 10px "Chakra Petch",sans-serif;letter-spacing:.16em;text-transform:uppercase;color:var(--hud);margin-top:9px}
+.card dd{margin:2px 0 0}.card small{display:block;margin-top:10px;color:var(--mut);font-size:11px}
+#dev{position:fixed;inset:0;z-index:100;display:none;place-items:center;background:rgba(0,0,0,.75);padding:16px}
+#dev.open{display:grid}
+#dev .pan{width:min(660px,100%);background:var(--panel);border:1px solid var(--hud);box-shadow:0 0 40px rgba(46,230,255,.2);padding:18px;animation:pop .22s ease-out}
+@keyframes pop{from{transform:scale(.94);opacity:0}}
+.people{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;margin:14px 0}
+.people div{border:1px solid var(--line);border-left:3px solid var(--hud);padding:10px 12px}
+.people b{display:block;font:700 15px "Chakra Petch",sans-serif;letter-spacing:.12em}
+.people span{color:var(--mut);font-size:12.5px;letter-spacing:.08em;text-transform:uppercase}
+/* ===== light theme, mobile fixes, fullscreen exit, collapsible settings ===== */
+:root[data-theme="light"]{--hud:#0a7e9a;--violet:#6d4fd0;--azure:#2563eb;--bg:#eef3f8;--panel:#fff;--ink:#0b1b2b;--mut:#4d6376;--line:#7fb4c6;--stage:linear-gradient(#e3edf8,#f7fafd);color-scheme:light}
+:root[data-theme="light"] .stage.v-blueprint{--stage:linear-gradient(color-mix(in srgb,var(--bpc,#0a7e9a) 12%,#fff),#f8fbff)}
+:root[data-theme="light"] .stage.v-desk{--stage:linear-gradient(#e9e3d9,#cfc6b8)}
+:root[data-theme="light"] .stage.v-flat{--stage:#f3f6fa}
+:root[data-theme="light"] .art{background:#eaf3fa}
+.stage.max{height:100dvh}
+#bExit{display:none;position:fixed;top:calc(env(safe-area-inset-top,0px) + 12px);right:12px;z-index:120;background:var(--panel);padding:12px 14px}
+body.fs #bExit{display:block}body.fs{overflow:hidden}
+.ctlbox{max-height:620px}
+details{border-top:1px solid var(--line)}
+details>summary{cursor:pointer;list-style:none;padding:11px 0;font-size:12px;display:flex;justify-content:space-between}
+details>summary::-webkit-details-marker{display:none}
+details>summary::after{content:"+";color:var(--hud)}details[open]>summary::after{content:"−"}
+@media (max-width:980px){.ctlbox{max-height:none;overflow:visible}}
+@media (max-width:700px){.stage{aspect-ratio:1/1;min-height:0}.top h1{font-size:15px;letter-spacing:.12em}}
+.rail{align-self:start}
+/* blueprint-only CSS layers: ruler ticks along the edges, a slow scan line, and a drawing-sheet caption */
+.rulers,.scan,.fig{display:none;position:absolute;pointer-events:none}
+.stage.v-blueprint .rulers,.stage.v-blueprint .scan,.stage.v-blueprint .fig{display:block}
+.rulers{inset:0;opacity:.55;background:
+ repeating-linear-gradient(90deg,var(--bpc,var(--hud)) 0 1px,transparent 1px 17px) 0 0/100% 6px no-repeat,
+ repeating-linear-gradient(90deg,var(--bpc,var(--hud)) 0 1px,transparent 1px 85px) 0 0/100% 12px no-repeat,
+ repeating-linear-gradient(0deg,var(--bpc,var(--hud)) 0 1px,transparent 1px 17px) 0 0/6px 100% no-repeat,
+ repeating-linear-gradient(0deg,var(--bpc,var(--hud)) 0 1px,transparent 1px 85px) 0 0/12px 100% no-repeat}
+.scan{left:0;right:0;top:-60px;height:60px;background:linear-gradient(transparent,color-mix(in srgb,var(--bpc,#2ee6ff) 14%,transparent),transparent);animation:sweep 7s linear infinite}
+@keyframes sweep{to{top:100%}}
+.fig{right:14px;bottom:12px;font-size:9px;color:var(--bpc,var(--hud));border:1px solid currentColor;padding:4px 8px;opacity:.85}
+@media (min-width:981px){
+ .wrap{grid-template-rows:auto minmax(0,1fr) auto auto}
+ .stage{aspect-ratio:auto;align-self:stretch;min-height:480px}   /* grows to match the side column, so there is no empty space under it */
+ .ctlbox{max-height:300px}
+ .card .in{max-height:520px}
+}
+.logo{overflow:visible}
+.foot .box{line-height:1.55}
+.railcol{grid-area:rail;display:flex;flex-direction:column;gap:12px;align-self:start}
+.railcol .rail{grid-area:auto;align-self:stretch}
+@media (max-width:980px){.railcol .rail{flex-wrap:wrap}.railcol .rail:last-child{order:-1}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top box">
+    <svg class="logo" viewBox="0 0 58 38" overflow="visible" aria-label="Logo: two rings, one glowing rainbow"><defs><filter id="lg" x="-70%" y="-70%" width="240%" height="240%"><feGaussianBlur stdDeviation="3.5"/></filter><g id="rb" fill="none"><circle cx="39" cy="19" r="12" stroke="hsl(0,100%,58%)" stroke-dasharray="3.4 72.0" stroke-dashoffset="0.000" transform="rotate(-90 39 19)"/><circle cx="39" cy="19" r="12" stroke="hsl(15,100%,58%)" stroke-dasharray="3.4 72.0" stroke-dashoffset="-3.142" transform="rotate(-90 39 19)"/><circle cx="39" cy="19" r="12" stroke="hsl(30,100%,58%)" stroke-dasharray="3.4 72.0" stroke-dashoffset="-6.283" transform="rotate(-90 39 19)"/><circle cx="39" cy="19" r="12" stroke="hsl(45,100%,58%)" stroke-dasharray="3.4 72.0" stroke-dashoffset="-9.425" transform="rotate(-90 39 19)"/><circle cx="39" cy="19" r="12" stroke="hsl(60,100%,58%)" stroke-dasharray="3.4 72.0" stroke-dashoffset="-12.566" transform="rotate(-90 39 19)"/><circle cx="39" cy="19" r="12" stroke="hsl(75,100%,58%)" stroke-dasharray="3.4 72.0" stroke-dashoffset="-15.708" transform="rotate(-90 39 19)"/><circle cx="39" cy="19" r="12" stroke="hsl(90,100%,58%)" stroke-dasharray="3.4 72.0" stroke-dashoffset="-18.850" transform="rotate(-90 39 19)"/><circle cx="39" cy="19" r="12" stroke="hsl(105,100%,58%)" stroke-dasharray="3.4 72.0" stroke-dashoffset="-21.991" transform="rotate(-90 39 19)"/><circle cx="39" cy="19" r="12" stroke="hsl(120,100%,58%)" stroke-dasharray="3.4 72.0" stroke-dashoffset="-25.133" transform="rotate(-90 39 19)"/><circle cx="39" cy="19" r="12" stroke="hsl(135,100%,58%)" stroke-dasharray="3.4 72.0" stroke-dashoffset="-28.274" transform="rotate(-90 39 19)"/><circle cx="39" cy="19" r="12" stroke="hsl(150,100%,58%)" stroke-dasharray="3.4 72.0" stroke-dashoffset="-31.416" transform="rotate(-90 39 19)"/><circle cx="39" cy="19" r="12" stroke="hsl(165,100%,58%)" stroke-dasharray="3.4 72.0" stroke-dashoffset="-34.558" transform="rotate(-90 39 19)"/><circle cx="39" cy="19" r="12" stroke="hsl(180,100%,58%)" stroke-dasharray="3.4 72.0" stroke-dashoffset="-37.699" transform="rotate(-90 39 19)"/><circle cx="39" cy="19" r="12" stroke="hsl(195,100%,58%)" stroke-dasharray="3.4 72.0" stroke-dashoffset="-40.841" transform="rotate(-90 39 19)"/><circle cx="39" cy="19" r="12" stroke="hsl(210,100%,58%)" stroke-dasharray="3.4 72.0" stroke-dashoffset="-43.982" transform="rotate(-90 39 19)"/><circle cx="39" cy="19" r="12" stroke="hsl(225,100%,58%)" stroke-dasharray="3.4 72.0" stroke-dashoffset="-47.124" transform="rotate(-90 39 19)"/><circle cx="39" cy="19" r="12" stroke="hsl(240,100%,58%)" stroke-dasharray="3.4 72.0" stroke-dashoffset="-50.266" transform="rotate(-90 39 19)"/><circle cx="39" cy="19" r="12" stroke="hsl(255,100%,58%)" stroke-dasharray="3.4 72.0" stroke-dashoffset="-53.407" transform="rotate(-90 39 19)"/><circle cx="39" cy="19" r="12" stroke="hsl(270,100%,58%)" stroke-dasharray="3.4 72.0" stroke-dashoffset="-56.549" transform="rotate(-90 39 19)"/><circle cx="39" cy="19" r="12" stroke="hsl(285,100%,58%)" stroke-dasharray="3.4 72.0" stroke-dashoffset="-59.690" transform="rotate(-90 39 19)"/><circle cx="39" cy="19" r="12" stroke="hsl(300,100%,58%)" stroke-dasharray="3.4 72.0" stroke-dashoffset="-62.832" transform="rotate(-90 39 19)"/><circle cx="39" cy="19" r="12" stroke="hsl(315,100%,58%)" stroke-dasharray="3.4 72.0" stroke-dashoffset="-65.974" transform="rotate(-90 39 19)"/><circle cx="39" cy="19" r="12" stroke="hsl(330,100%,58%)" stroke-dasharray="3.4 72.0" stroke-dashoffset="-69.115" transform="rotate(-90 39 19)"/><circle cx="39" cy="19" r="12" stroke="hsl(345,100%,58%)" stroke-dasharray="3.4 72.0" stroke-dashoffset="-72.257" transform="rotate(-90 39 19)"/></g></defs><circle cx="19" cy="19" r="12" fill="none" stroke="var(--hud)" stroke-width="2.5"/><g><use href="#rb" stroke-width="7" opacity=".5" filter="url(#lg)"/><use href="#rb" stroke-width="2.5"/><animateTransform attributeName="transform" type="rotate" from="0 39 19" to="360 39 19" dur="9s" repeatCount="indefinite"/></g></svg>
+    <div><h1 class="px">Theorem II</h1><small>Interactive Newton's Cradle · Momentum &amp; Energy Blueprint</small></div>
+    </header>
+
+  <section class="box stage" id="stage">
+    <canvas id="cv"></canvas><div class="rulers"></div><div class="scan"></div><div class="fig px">Fig. 1 · Newton's Cradle · Scale 1:1</div><div id="st" class="px">PAUSED</div>
+    <div class="tools"><button id="bPanel">PANEL</button><button id="bMax">FULL</button></div>
+    <div id="tip"><b>Drag any ball sideways and let go</b> to start the swing. Balls on the side you pull toward come along, so pulling ball 3 lifts balls 1–3. Drag empty space to orbit · scroll to zoom · double-click a ball for a quick launch. (tap to hide)</div>
+  </section>
+
+  <div class="railcol">
+    <nav class="box rail">
+    <button id="mode" title="Light / dark">MODE</button>
+    <button id="bSnd">SOUND</button>
+    <button id="bTheme" title="Light / dark theme">THEME</button>
+  </nav>
+    <nav class="box rail" aria-label="Simulation controls">
+      <button id="bStart" class="red">START</button><button id="bPause">PAUSE</button><button id="bStep">STEP</button><button id="bReset">RESET</button><button id="bView">VIEW</button>
+    </nav>
+  </div>
+
+  <aside class="side">
+    <h2 class="px tag">Info Plate</h2>
+    <div class="card"><div class="in">
+      <div class="ct px"><b>Newton's Cradle</b></div>
+      <div class="art"><svg viewBox="0 0 240 120" fill="none" stroke="var(--hud)" stroke-width="1.6" stroke-linecap="round"><path d="M26 12H214M26 12V108M214 12V108M16 108H224" opacity=".6"/><path d="M72 12L46 62M96 12V72M120 12V72M144 12V72M168 12V72"/><circle cx="40" cy="73" r="12"/><circle cx="96" cy="84" r="12"/><circle cx="120" cy="84" r="12"/><circle cx="144" cy="84" r="12"/><circle cx="168" cy="84" r="12"/></svg></div>
+      <dl>
+        <dt>Who made it</dt><dd>The cradle grew out of several people's work. In 1662, John Wallis, Christopher Wren and Christiaan Huygens presented the principles of collisions to the Royal Society, and in the early 1670s the French physicist and priest Edme Mariotte recorded the first experiments with colliding pendulum balls. In 1967, the English actor Simon Prebble turned the idea into a desk toy and named it after Isaac Newton.</dd>
+        <dt>When</dt><dd>1662 to the early 1670s: the collision principles are worked out and tested.<br>1687: Newton publishes his laws of motion, which explain them.<br>1967: the desk toy is named and sold through Harrods in London.</dd>
+        <dt>Why it was made</dt><dd><ul><li>To study how motion passes from one body to another in a collision.</li><li>As a desk toy, named after Newton because his laws explain it.</li></ul></dd>
+        <dt>First materials</dt><dd><ul><li>1967 version: wooden frame.</li><li>Today: polished steel balls, two strings each.</li></ul></dd>
+        <dt>What it explains</dt><dd><ul><li>Conservation of momentum.</li><li>Conservation of energy in nearly elastic collisions.</li><li>One ball in, one ball out; two in, two out.</li></ul></dd>
+        <dt>What gets solved for</dt><dd>Momentum p = m·v<br>Kinetic energy KE = ½·m·v²<br>Potential energy PE = m·g·h, where h = L(1 − cos θ)<br>Velocity v = p ÷ m</dd>
+      </dl>
+      <small>Sources: HowStuffWorks, ScienceABC, UCSB Physics Lecture Demonstrations.</small>
+    </div></div>
+    <div class="box"><h2 class="px">Customize</h2><div class="ctlbox" id="ctl"></div></div>
+  </aside>
+
+  <section class="bot">
+    <div class="box"><h2 class="px">Live Physics Dashboard</h2>
+      <div class="dash">
+        <div class="rd"><i>MOMENTUM</i><b id="rp">0</b> <u>kg·m/s</u></div>
+        <div class="rd"><i>KINETIC E</i><b id="rk">0</b> <u>J</u></div>
+        <div class="rd"><i>POTENTIAL E</i><b id="re">0</b> <u>J</u></div>
+        <div class="rd"><i>TOTAL E</i><b id="rt">0</b> <u>J</u></div>
+      </div>
+      <p style="margin:8px 0 0;font-size:12px;color:var(--mut)">Momentum is signed (+ = moving right) and swings back and forth as balls swing. It is only conserved during a hit. Kinetic + potential energy stays nearly constant and slowly shrinks from air drag, friction and imperfect bounces.</p></div>
+    <div class="box"><h2 class="px">Ball Presets</h2>
+      <div class="sks">
+        <button class="sk on" data-s="steel"><i style="--t:#aeb7c4"></i>Steel</button>
+        <button class="sk" data-s="brass"><i style="--t:#b08d57"></i>Brass</button>
+        <button class="sk" data-s="gold"><i style="--t:#f2c14e"></i>Gold</button>
+        <button class="sk" data-s="silver"><i style="--t:#e6eaf0"></i>Silver</button>
+      </div></div>
+  </section>
+
+  <footer class="foot">
+    <div class="box"><span class="px">DEVELOPERS</span><br><button id="devB" style="margin-top:8px">View Information</button></div>
+    <div class="box"><span class="px">DEVELOPED BY Theorem II</span><br>© NU Bacolod · Class 12CT2503<br>Made with VS Code and Claude. 3D by Three.js, CSS.<br>Structured with HTML, JavaScript, Canvas 2D, SVG, Web Audio API, GitHub Copilot, and Google Fonts <i>(Chakra Petch</i>, <i>Barlow</i>, <i>Share Tech Mono</i>).</div>
+  </footer>
+</div>
+
+<button id="bExit">EXIT FULLSCREEN</button>
+<div id="dev" role="dialog" aria-label="Developers"><div class="pan"><h2 class="px">Developers · Theorem II</h2>
+<div class="people">
+<div><b>APAWAN</b><span>Graphics Designer</span></div><div><b>BALANGA-AN</b><span>Asst. Coder</span></div>
+<div><b>CONTREVIDA</b><span>OTD Interactor</span></div><div><b>LOPEZ</b><span>Main Presenter</span></div>
+<div><b>RUIZ</b><span>Asst. Presenter</span></div><div><b>TIANGSON</b><span>Main Coder</span></div>
+</div><button id="devX">Close</button></div></div>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+addEventListener('error',e=>{if(document.getElementById('errb'))return;const d=document.createElement('div');d.id='errb';
+  d.style.cssText='position:fixed;left:8px;right:8px;bottom:8px;z-index:999;background:#2a0a0a;color:#fff;border:1px solid #ff6b6b;padding:10px;font:12px/1.4 monospace';
+  d.textContent='Something went wrong: '+(e.message||'unknown error')+' (line '+e.lineno+'). Try reloading; if it persists, send this message to the developer.';document.body.appendChild(d)});
+if(typeof THREE==='undefined'||!THREE.OrbitControls){const d=document.createElement('div');d.style.cssText='padding:14px;color:#fff;background:#2a0a0a';d.textContent='The 3D library did not load. Check your internet connection and reload.';document.body.prepend(d)}
+const $=id=>document.getElementById(id);
+const K=100, STEP=1/1000;               // K = scene units per metre; STEP = physics timestep (s)
+const S={n:5,L:.8,r:.1,m:.2,v0:0,ms:[],maxA:70,g:9.81,ang:40,lift:1,air:2,speed:.75,view:'blueprint',bp:'',mat:'steel',col:'#aeb7c4',cols:[],glow:true,gi:.8,f:0,fr:0,e:.98,lab:'',c:.012}; // all settings live here
+
+/* ================= PHYSICS ENGINE (no graphics) =================
+   Each ball is a pendulum: angle th, angular speed w.
+   1) every tiny step: gravity + air drag change w, w changes th.
+   2) then check neighbours: if two touching balls move toward each other, swap momentum (elastic hit). */
+class Cradle{
+  constructor(){this.hits=[];this.reset()}
+  reset(){this.b=Array.from({length:S.n},(_,i)=>({th:0,w:0,m:S.ms[i]??S.m}));this.hs=new Set()}   // everything starts at rest: YOU start the swing
+  px(i){return (i-(S.n-1)/2)*(2*S.r+1e-4)}                 // where ball i's string is pinned
+  x(i){return this.px(i)+S.L*Math.sin(this.b[i].th)}        // where ball i actually is
+  vx(i){const b=this.b[i];return S.L*b.w*Math.cos(b.th)}    // its sideways speed
+  step(dt){
+    this.b.forEach((b,i)=>{if(this.hs.has(i))return;b.w+=(-(S.g/S.L)*Math.sin(b.th)-S.c*b.w)*dt;const fr=S.f*dt;b.w=Math.abs(b.w)<=fr?0:b.w-Math.sign(b.w)*fr;b.th+=b.w*dt});  // friction: constant drag that can stop the ball  // the ball in your hand is skipped
+    for(let pass=0;pass<S.n;pass++)for(let i=0;i<S.n-1;i++){   // several passes so the hit travels down the chain
+      if(this.hs.has(i)||this.hs.has(i+1)||this.x(i+1)-this.x(i)-2*S.r>2e-4)continue;             // not touching
+      const va=this.vx(i),vb=this.vx(i+1);if(va-vb<=2e-3)continue;this.hits.push({a:i,b:i+1,v:va-vb});   // remember the hit so the sound can play // not approaching
+      const A=this.b[i],B=this.b[i+1],ma=A.m,mb=B.m,M=ma+mb;      // general 1D elastic collision (works for any masses)
+      A.w=((ma-S.e*mb)*va+(1+S.e)*mb*vb)/M/(S.L*Math.cos(A.th));
+      B.w=((mb-S.e*ma)*vb+(1+S.e)*ma*va)/M/(S.L*Math.cos(B.th));
+    }
+  }
+  stats(){let p=0,ke=0,pe=0;for(const b of this.b){const v=S.L*b.w;p+=b.m*v*Math.cos(b.th);ke+=.5*b.m*v*v;pe+=b.m*S.g*S.L*(1-Math.cos(b.th))}return{p,ke,pe}}
+}
+let cr=new Cradle(),running=false;
+
+/* ================= 3D SCENE (Three.js) ================= */
+const R=new THREE.WebGLRenderer({canvas:$('cv'),antialias:true,alpha:true});
+R.shadowMap.enabled=true;R.shadowMap.type=THREE.PCFShadowMap;   // this type lets us blur shadow edges with shadow.radius
+
+const sc=new THREE.Scene(),cam=new THREE.PerspectiveCamera(38,1,1,3000);
+const oc=new THREE.OrbitControls(cam,$('cv'));oc.enableDamping=true;oc.maxPolarAngle=Math.PI*.55;oc.minDistance=120;oc.maxDistance=800;
+/* Keeps the whole cradle in frame on narrow screens: the narrower the window, the further back the camera sits. */
+function fitCam(){const t=Math.tan(cam.fov*Math.PI/360),dist=Math.max(310,(S.n*S.r*K+60)/(t*cam.aspect)*1.08);
+  const off=cam.position.clone().sub(oc.target).normalize().multiplyScalar(dist);cam.position.copy(oc.target).add(off);oc.update()}
+function view(){cam.position.set(110,-5,310);oc.target.set(0,-45,0);fitCam();oc.update()}
+sc.add(new THREE.AmbientLight(0xffffff,.75));
+const sun=new THREE.DirectionalLight(0xffffff,.8);sun.position.set(160,260,220);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);
+Object.assign(sun.shadow.camera,{left:-260,right:260,top:260,bottom:-260,near:10,far:900});sc.add(sun);
+/* Light is placed with two angles: direction (spin around the cradle) and height (how high in the sky). */
+const LK={az:36,el:44,int:.8,sh:.25,blur:4};let gmat=null;
+function applyLight(){const a=LK.az*Math.PI/180,e=LK.el*Math.PI/180,D=380;
+  sun.position.set(D*Math.cos(e)*Math.sin(a),D*Math.sin(e),D*Math.cos(e)*Math.cos(a));
+  sun.intensity=LK.int;sun.shadow.radius=LK.blur;if(gmat)gmat.opacity=LK.sh}
+applyLight();
+
+let rig=new THREE.Group(),balls=[],strs=[],zo=0,labs=[],vArr=[],gArr=[],tArr=[],trl=[],tr=[],halos=[];sc.add(rig);
+function build(){
+  sc.remove(rig);rig.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.material)o.material.dispose()});
+  rig=new THREE.Group();sc.add(rig);balls=[];strs=[];labs=[];vArr=[];gArr=[];tArr=[];trl=[];tr=[];halos=[];
+  const r=S.r*K,L=S.L*K,hw=S.n*r+40,fl=-(L+r+30);zo=r*3.2;
+  const HC=S.bp?parseInt(S.bp.slice(1),16):(document.documentElement.dataset.theme==='light'?0x0a7e9a:0x2ee6ff),V3=S.view,P=V3==='desk'?{r:0x9097a3,p:0x7d8591,b:0x5a3d28,s:0xe6e2d8}:V3==='flat'?{r:0x6f86b3,p:0x4d628c,b:0x1d2a47,s:0x9db2d8}:{r:0,p:0,b:0,s:HC};
+  // stand material: blueprint = glowing wireframe, flat = no shading, desk = matte (rough, barely metallic) so it doesn't look glossy
+  const mat=c=>V3==='blueprint'?new THREE.MeshBasicMaterial({color:HC,wireframe:true,transparent:true,opacity:.5}):V3==='flat'?new THREE.MeshBasicMaterial({color:c}):new THREE.MeshStandardMaterial({color:c,roughness:.85,metalness:.2});
+  const add=(geo,c,x,y,z,rx,rz)=>{const m=new THREE.Mesh(geo,mat(c));m.position.set(x,y,z);m.rotation.set(rx||0,0,rz||0);m.castShadow=m.receiveShadow=true;rig.add(m)};
+  for(const z of[-zo,zo])add(new THREE.CylinderGeometry(3.5,3.5,2*hw,14),P.r,0,0,z,0,Math.PI/2);       // top rails
+  for(const sx of[-1,1])for(const sz of[-1,1])add(new THREE.CylinderGeometry(4.5,4.5,-fl,12),P.p,sx*hw,fl/2,sz*zo); // posts
+  for(const sx of[-1,1])add(new THREE.CylinderGeometry(3.5,3.5,2*zo,12),P.r,sx*hw,0,0,Math.PI/2,0);    // end bars
+  add(new THREE.BoxGeometry(2*hw+40,12,2*zo+40),P.b,0,fl-6,0);                                           // base
+  const gr=new THREE.Mesh(new THREE.PlaneGeometry(3000,3000),gmat=new THREE.ShadowMaterial({opacity:LK.sh}));gr.rotation.x=-Math.PI/2;gr.position.y=fl-11.5;gr.receiveShadow=true;gr.visible=V3==='desk';rig.add(gr);
+  if(V3==='desk'){const dk=new THREE.Mesh(new THREE.PlaneGeometry(2200,1500),new THREE.MeshStandardMaterial({map:woodTex(),roughness:.9,metalness:0}));dk.rotation.x=-Math.PI/2;dk.position.y=fl-12;rig.add(dk)}
+  if(V3==='blueprint'){const gd=new THREE.GridHelper(900,36,HC,document.documentElement.dataset.theme==='light'?new THREE.Color(HC).lerp(new THREE.Color(0xffffff),.65):new THREE.Color(HC).multiplyScalar(.4));gd.position.y=fl-12;gd.material.transparent=true;gd.material.opacity=.45;rig.add(gd)}
+  sun.castShadow=V3==='desk';accentL.forEach(l=>l.intensity=V3==='desk'?.1:.55);
+  for(let i=0;i<S.n;i++){
+    const m=new THREE.Mesh(new THREE.SphereGeometry(r,V3==='blueprint'?20:40,V3==='blueprint'?14:28),V3==='blueprint'?new THREE.MeshBasicMaterial({color:ballCol(i),wireframe:true}):V3==='flat'?new THREE.MeshBasicMaterial({color:ballCol(i)}):new THREE.MeshPhongMaterial({color:ballCol(i),shininess:120,specular:0xffffff}));
+    m.castShadow=true;rig.add(m);balls.push(m);
+    const px=cr.px(i)*K,g=new THREE.BufferGeometry();
+    g.setAttribute('position',new THREE.BufferAttribute(new Float32Array([px,0,-zo,0,0,0,px,0,zo,0,0,0]),3));
+    const l=new THREE.LineSegments(g,new THREE.LineBasicMaterial({color:P.s}));l.frustumCulled=false;rig.add(l);strs.push(l);
+    const nm=(S.lab||'').split(',').map(q=>q.trim()),lb=label(nm[i]||String(i+1));rig.add(lb);labs.push(lb);
+    vArr.push(mkArrow(0x6aa5ff));gArr.push(mkArrow(0xff7a9c));tArr.push(mkArrow(0x4fd1c5));
+    const tg=new THREE.BufferGeometry();tg.setAttribute('position',new THREE.BufferAttribute(new Float32Array(240),3));tg.setDrawRange(0,0);
+    const tl=new THREE.Line(tg,new THREE.LineBasicMaterial({color:0x2ee6ff,transparent:true,opacity:.6}));tl.frustumCulled=false;rig.add(tl);trl.push(tl);tr.push([]);
+    const hs=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex(),transparent:true,blending:THREE.AdditiveBlending,depthWrite:false}));hs.scale.set(r*5,r*5,1);hs.renderOrder=3;rig.add(hs);halos.push(hs);applyBalls();
+  }
+}
+function draw(){
+  for(let i=0;i<balls.length&&i<cr.b.length;i++){
+    const th=cr.b[i].th,x=(cr.px(i)+S.L*Math.sin(th))*K,y=-S.L*Math.cos(th)*K;
+    balls[i].position.set(x,y,0);
+    const p=strs[i].geometry.attributes.position;p.setXYZ(1,x,y,0);p.setXYZ(3,x,y,0);p.needsUpdate=true;drawExtras(i,x,y,th);
+  }
+  drawEchoes();oc.update();R.render(sc,cam);
+}
+new ResizeObserver(()=>{const s=$('stage');R.setPixelRatio(Math.min(devicePixelRatio,2));R.setSize(s.clientWidth,s.clientHeight,false);cam.aspect=s.clientWidth/s.clientHeight;cam.updateProjectionMatrix();if(!window._la||Math.abs(cam.aspect/window._la-1)>.03){window._la=cam.aspect;fitCam()}}).observe($('stage'));
+
+/* ================= UI ================= */
+const defs=[['n','Number of balls',2,8,1,''],['r','Ball radius',.04,.2,.01,' m'],['L','String length',.3,1.5,.05,' m'],['g','Gravity',1.6,24.8,.1,' m/s²'],['ang','Double-click angle',5,80,1,'°'],['maxA','Maximum drag angle',20,85,1,'°'],['v0','Release push (initial velocity)',0,5,.1,' m/s'],['air','Air resistance',0,100,1,'%'],['fr','Pivot friction',0,100,1,'%'],['e','Bounciness (energy kept in a hit)',.5,1,.01,''],['speed','Simulation speed',.25,10,.25,'×']];
+const show=k=>{$('v_'+k).textContent=S[k]+defs.find(d=>d[0]===k)[5]};
+function run(b){running=b;$('st').textContent=(b?'LIVE':'PAUSED')+' · '+S.view;$('st').classList.toggle('live',b)}
+function change(k){
+  if(k==='n'){S.ms.length=Math.min(S.ms.length,S.n);fillSel();fillCsel()}
+  if(k==='air')S.c=S.air/100*.6;
+  if(k==='fr')S.f=S.fr/100*1.5;
+  show(k);
+  if(k==='n'||k==='L'||k==='r'){cr.reset();build();if(k!=='L')fitCam()}
+}
+defs.forEach(([k,lab,mn,mx,st])=>{
+  const d=document.createElement('label');d.className='sl';
+  d.innerHTML=`<span>${lab}<b id="v_${k}"></b></span><input type="range" id="i_${k}" min="${mn}" max="${mx}" step="${st}">`;
+  $('ctl').appendChild(d);const i=d.querySelector('input');i.value=S[k];i.oninput=()=>{S[k]=+i.value;change(k)};show(k)});
+/* Mass: pick "All balls" or a single ball, then slide. Different masses = a heavy ball plows through light ones. */
+const mbox=document.createElement('label');mbox.className='sl';
+mbox.innerHTML='<span>Mass<b id="v_m"></b></span><select id="msel"></select><input type="range" id="i_m" min=".05" max="2" step=".05">';
+$('ctl').insertBefore(mbox,$('i_r').parentNode);
+function curM(){const v=$('msel').value;return v==='all'?S.m:(S.ms[+v]??S.m)}
+function syncM(){$('i_m').value=curM();$('v_m').textContent=' '+(+curM()).toFixed(2)+' kg'}
+function fillSel(){const sel=$('msel'),v=sel.value||'all';
+  sel.innerHTML='<option value="all">All balls</option>'+Array.from({length:S.n},(_,i)=>`<option value="${i}">Ball ${i+1}</option>`).join('');
+  sel.value=(v==='all'||+v<S.n)?v:'all';syncM()}
+$('i_m').oninput=()=>{const x=+$('i_m').value,v=$('msel').value;if(v==='all'){S.m=x;S.ms=[]}else S.ms[+v]=x;cr.b.forEach((b,i)=>b.m=S.ms[i]??S.m);syncM()};
+$('msel').onchange=syncM;fillSel();
+
+$('bStart').onclick=()=>{audio();run(true)};$('bPause').onclick=()=>run(false);
+$('bStep').onclick=()=>{run(false);for(let t=0;t<1/30;t+=STEP)cr.step(STEP)};
+$('bReset').onclick=()=>{audio();cr.reset();run(false);tr.forEach(t=>t.length=0)};$('bView').onclick=view;
+$('tip').onclick=()=>$('tip').remove();
+
+
+/* ================= DRAG A BALL (raycasting) =================
+   A ray from the mouse is shot into the 3D scene. If it hits a ball, that ball is "held": we place it where the mouse is
+   on the swing plane, but never through its neighbours and never past the maximum angle. Letting go releases it. */
+const ray=new THREE.Raycaster(),mv=new THREE.Vector2(),plane=new THREE.Plane(new THREE.Vector3(0,0,1),0);let held=-1;
+function setRay(e){const q=$('cv').getBoundingClientRect();mv.set((e.clientX-q.left)/q.width*2-1,-(e.clientY-q.top)/q.height*2+1);ray.setFromCamera(mv,cam)}
+function pick(e){setRay(e);const h=ray.intersectObjects(balls);return h.length?balls.indexOf(h[0].object):-1}
+/* Drag ANY ball. The balls on the side you pull toward come along: pull ball 3 to the left and balls 1, 2 and 3 lift together,
+   like grabbing several balls on a real cradle. Pull it the other way and the group switches to the balls on the right. */
+const cv=$('cv');let grp=[];
+function groupFor(i,dir){return dir<0?Array.from({length:i+1},(_,k)=>k):Array.from({length:S.n-i},(_,k)=>i+k)}
+function moveGroup(i,x){   // x = mouse position in metres
+  const dir=x<cr.px(i)?-1:1,g=groupFor(i,dir);
+  grp.forEach(k=>{if(!g.includes(k)){cr.hs.delete(k);cr.b[k].w=0}});      // you changed direction: let the others go
+  grp=g;g.forEach(k=>cr.hs.add(k));                                         // held balls are skipped by the physics
+  let sn=(x-cr.px(i))/S.L;const lim=Math.sin(S.maxA*Math.PI/180);
+  if(dir<0&&i<S.n-1)sn=Math.min(sn,(cr.x(i+1)-2*S.r-2e-4-cr.px(i))/S.L);   // can't push through the free ball beside the group
+  if(dir>0&&i>0)sn=Math.max(sn,(cr.x(i-1)+2*S.r+2e-4-cr.px(i))/S.L);
+  sn=Math.max(-lim,Math.min(lim,sn));const th=Math.asin(sn);
+  g.forEach(k=>{cr.b[k].th=th;cr.b[k].w=0})}                              // the whole group hangs at the same angle
+function releaseGroup(){grp.forEach(k=>{const b=cr.b[k];b.w=Math.sign(-b.th)*S.v0/(S.L*Math.cos(b.th));cr.hs.delete(k)});grp=[];run(true)}
+cv.addEventListener('pointerdown',e=>{const i=pick(e);if(i<0)return;held=i;oc.enabled=false;cv.setPointerCapture(e.pointerId);audio();cv.style.cursor='grabbing'},true);
+cv.addEventListener('pointermove',e=>{
+  if(held<0){cv.style.cursor=pick(e)>=0?'grab':'';return}
+  setRay(e);const p=new THREE.Vector3();if(ray.ray.intersectPlane(plane,p))moveGroup(held,p.x/K)});
+const drop=()=>{if(held>=0){releaseGroup();held=-1}oc.enabled=true;cv.style.cursor=''};
+cv.addEventListener('pointerup',drop);cv.addEventListener('pointercancel',drop);
+cv.addEventListener('dblclick',e=>{const i=pick(e);if(i<0)return;audio();const dir=i<=(S.n-1)/2?-1:1;
+  moveGroup(i,cr.px(i)+dir*S.L*Math.sin(S.ang*Math.PI/180));releaseGroup()});
+
+/* ================= SOUND (Web Audio: the clack is made from a tiny synth beep, no audio file) ================= */
+let AC=null,sndOn=true,lastC=0;
+function audio(){if(!AC){try{AC=new(window.AudioContext||window.webkitAudioContext)();AC.master=AC.createDynamicsCompressor();AC.master.connect(AC.destination)}catch(e){}}if(AC&&AC.state!=='running'&&AC.resume)AC.resume()}
+addEventListener('pointerdown',audio,true);addEventListener('keydown',audio,true);   // any click or key wakes the audio up again
+/* Each material has its own click: steel = sharp and high, brass = warmer, gold = soft and dull, silver = bright and ringing. */
+const SND={steel:{f:3600,q:1.4,len:.018,g:1.6},brass:{f:2300,q:2.2,len:.028,g:1.5},gold:{f:1500,q:1,len:.036,g:1.4},silver:{f:4800,q:2.6,len:.024,g:1.5}};
+function clack(v,off){if(!sndOn||!AC||v<.04)return;   // hits too weak to be real collisions make no sound (this was the "static")
+  const m=SND[S.mat]||SND.steel,t=AC.currentTime+(off||0),vol=.3+Math.min(v,3)*.18;   // even a gentle hit is clearly audible; harder hits are louder
+  const n=Math.floor(AC.sampleRate*m.len),buf=AC.createBuffer(1,n,AC.sampleRate),d=buf.getChannelData(0);
+  for(let k=0;k<n;k++)d[k]=(Math.random()*2-1)*Math.pow(1-k/n,5);
+  const ns=AC.createBufferSource(),bp=AC.createBiquadFilter(),g=AC.createGain();ns.buffer=buf;bp.type='bandpass';bp.frequency.value=m.f*(.95+Math.random()*.1);bp.Q.value=m.q;g.gain.value=vol*m.g*.6;
+  ns.connect(bp);bp.connect(g);g.connect(AC.master||AC.destination);ns.start(t)}
+$('bSnd').onclick=()=>{sndOn=!sndOn;$('bSnd').textContent=sndOn?'SOUND':'MUTED';audio()};
+
+/* ================= PANELS, FULLSCREEN, BACKGROUND, CUSTOM BALLS, MUSIC ================= */
+$('bPanel').onclick=()=>document.querySelector('.wrap').classList.toggle('nopanel');
+$('bMax').onclick=()=>{const m=$('stage').classList.toggle('max');document.body.classList.toggle('fs',m);$('bMax').textContent=m?'EXIT':'FULL'};$('bExit').onclick=()=>$('bMax').click();
+addEventListener('keydown',e=>{if(e.key==='Escape'&&$('stage').classList.contains('max'))$('bMax').click()});
+const ext=document.createElement('div');
+ext.innerHTML=`<h2 class="px" style="margin-top:14px">Background &amp; Media</h2>
+<label class="sl"><span>Blueprint color (RGB picker)</span><input type="color" id="bpc" value="#2ee6ff"></label><button id="bpr" style="margin-bottom:12px">RESET BLUEPRINT COLOR</button>
+<label class="sl"><span>Background color</span><input type="color" id="bgc" value="#bfe6ff"></label>
+<label class="sl"><span>Background image</span><input type="file" id="bgi" accept="image/*"></label>
+<label class="sl"><span>Background music (audio file)</span><input type="file" id="mus" accept="audio/*"></label>
+<button id="bMus">MUSIC ▶/❚❚</button> <button id="bClrMus">CLEAR MUSIC</button> <button id="bgr">CLEAR BG</button>`;
+$('ctl').appendChild(ext);
+const readF=(f,cb)=>{if(!f)return;const r=new FileReader();r.onload=()=>cb(r.result);r.readAsDataURL(f)};
+$('bgc').oninput=e=>$('stage').style.background=e.target.value;
+$('bgi').onchange=e=>readF(e.target.files[0],u=>$('stage').style.background=`center/cover url(${u})`);
+$('bgr').onclick=()=>$('stage').style.background='';
+
+const bgm=new Audio();bgm.loop=true;bgm.volume=.4;
+$('mus').onchange=e=>{const f=e.target.files[0];if(f){bgm.src=URL.createObjectURL(f);bgm.play().catch(()=>{})}};
+$('bMus').onclick=()=>{if(bgm.src)bgm.paused?bgm.play():bgm.pause()};
+
+
+
+/* ================= LIGHT & SHADOW CONTROLS ================= */
+const lgt=document.createElement('div'),ins={};
+lgt.innerHTML='<h2 class="px" style="margin-top:14px">Light &amp; Shadows</h2>';
+[['az','Light direction',0,360,1,'°'],['el','Light height',8,90,1,'°'],['int','Light intensity',0,2,.05,''],['sh','Shadow strength',0,.8,.01,''],['blur','Shadow blur',0,12,.5,'']].forEach(([k,lab,mn,mx,st,u])=>{
+  const d=document.createElement('label');d.className='sl';
+  d.innerHTML=`<span>${lab}<b></b></span><input type="range" min="${mn}" max="${mx}" step="${st}" value="${LK[k]}">`;
+  const i=d.querySelector('input'),sh=()=>d.querySelector('b').textContent=' '+LK[k]+u;
+  i.oninput=()=>{LK[k]=+i.value;sh();applyLight()};sh();ins[k]=[i,sh];lgt.appendChild(d)});
+lgt.insertAdjacentHTML('beforeend','<label class="sl"><span>Light color</span><input type="color" id="lcol" value="#ffffff"></label><button id="bLR">RESET LIGHT</button>');
+$('ctl').appendChild(lgt);
+$('lcol').oninput=e=>sun.color.set(e.target.value);
+$('bLR').onclick=()=>{Object.assign(LK,{az:36,el:44,int:.8,sh:.25,blur:4});Object.entries(ins).forEach(([k,[i,sh]])=>{i.value=LK[k];sh()});$('lcol').value='#ffffff';sun.color.set('#ffffff');applyLight()};
+
+/* ================= v5: VISUALS, PRESETS X/Y/Z, RESET DEFAULTS ================= */
+const DEF=JSON.parse(JSON.stringify(S)),V={lab:true,vel:false,force:false,trail:false};
+function label(t){const c=document.createElement('canvas');c.width=256;c.height=64;const g=c.getContext('2d');
+  g.font='bold 34px Barlow,sans-serif';g.textAlign='center';g.lineWidth=7;const LT=document.documentElement.dataset.theme==='light';g.strokeStyle=LT?'#fff':'#000';g.fillStyle=LT?'#0a5f77':'#8cf3ff';g.strokeText(t,128,44);g.fillText(t,128,44);
+  const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(c),depthTest:false,transparent:true}));sp.scale.set(52,13,1);sp.renderOrder=9;return sp}
+function mkArrow(c){const a=new THREE.ArrowHelper(new THREE.Vector3(1,0,0),new THREE.Vector3(),10,c,6,4);a.visible=false;a.renderOrder=8;a.traverse(o=>{if(o.material)o.material.depthTest=false});rig.add(a);return a}
+function setA(a,on,x,y,dx,dy,len){if(!on||len<3){a.visible=false;return}a.visible=true;a.position.set(x,y,0);a.setDirection(new THREE.Vector3(dx,dy,0).normalize());a.setLength(len,Math.min(8,len*.4),4)}
+/* Called every frame for each ball: label, blue velocity arrow, red gravity arrow, green string-tension arrow, and the trail. */
+function drawExtras(i,x,y,th){
+  if(halos[i])halos[i].position.set(x,y,0);
+  const b=cr.b[i],vx=cr.vx(i),r=S.r*K,T=b.m*(S.g*Math.cos(th)+S.L*b.w*b.w);   // tension = m(g·cosθ + L·ω²)
+  labs[i].visible=V.lab;labs[i].position.set(x,y-r-9,r+2);
+  setA(vArr[i],V.vel,x,y,vx>=0?1:-1,0,Math.abs(vx)*22);
+  setA(gArr[i],V.force,x,y,0,-1,b.m*S.g*18);
+  const dx=cr.px(i)*K-x,dl=Math.hypot(dx,y)||1;setA(tArr[i],V.force,x,y,dx/dl,-y/dl,T*18);
+  const t=tr[i];if(running||held>=0){t.push(x,y);if(t.length>160)t.splice(0,2)}
+  const pa=trl[i].geometry.attributes.position;for(let k=0;k<t.length;k+=2)pa.setXYZ(k/2,t[k],t[k+1],0);
+  pa.needsUpdate=true;trl[i].geometry.setDrawRange(0,t.length/2);trl[i].visible=V.trail}
+
+const PK=['n','r','L','g','m','v0','air','fr','e','speed','ang','maxA'];
+let SLOTS={X:{name:'Classic',d:{}},Y:{name:'Heavy Hitter',d:{ms:[1.5]}},Z:{name:'Moon Mode',d:{g:1.62,L:1.2,air:0}}};
+try{const q=JSON.parse(localStorage.getItem('pkmSlots')||'null');if(q)SLOTS=q}catch(e){}
+function syncAll(){S.c=S.air/100*.6;S.f=S.fr/100*1.5;defs.forEach(([k])=>{$('i_'+k).value=S[k];show(k)});
+  S.ms.length=Math.min(S.ms.length,S.n);fillSel();cr.reset();run(false);fillCsel();setView(S.view);syncColorUI()}
+const topBox=document.createElement('div');
+topBox.innerHTML=`<h2 class="px">Visuals</h2>
+<label class="sl"><span>Ball labels (comma separated)</span><input type="text" id="labt" placeholder="e.g. A,B,C,D,E" style="padding:6px;border:2px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);font:inherit"></label>
+<label style="display:block;margin:4px 0"><input type="checkbox" id="vLab" checked style="width:auto"> Ball labels</label>
+<label style="display:block;margin:4px 0"><input type="checkbox" id="vVel" style="width:auto"> Velocity vectors (light blue)</label>
+<label style="display:block;margin:4px 0"><input type="checkbox" id="vFor" style="width:auto"> Force arrows (rose gravity, teal tension)</label>
+<label style="display:block;margin:4px 0"><input type="checkbox" id="vTrl" style="width:auto"> Trajectory trails</label>
+<button id="bDef" style="margin:10px 0 14px">RESET TO DEFAULT</button>`;
+$('ctl').insertBefore(topBox,$('ctl').firstChild);
+
+[['vLab','lab'],['vVel','vel'],['vFor','force'],['vTrl','trail']].forEach(([id,k])=>$(id).onchange=e=>{V[k]=e.target.checked});
+$('labt').oninput=e=>{S.lab=e.target.value;build()};
+$('bDef').onclick=()=>{Object.assign(S,JSON.parse(JSON.stringify(DEF)));syncAll();$('labt').value='';
+  syncColorUI()};
+
+/* ================= OBSERVATORY: ball colors + glow ================= */
+const accentL=[];[[0x8f6cf0,-220,70,160],[0x4a86f0,230,-20,140]].forEach(([c,x,y,z])=>{const l=new THREE.PointLight(c,.55);l.position.set(x,y,z);sc.add(l);accentL.push(l)}); // violet + blue accent lights
+let _gt;function glowTex(){if(_gt)return _gt;const c=document.createElement('canvas');c.width=c.height=128;const g=c.getContext('2d'),q=g.createRadialGradient(64,64,0,64,64,64);
+  q.addColorStop(0,'rgba(255,255,255,.9)');q.addColorStop(.35,'rgba(255,255,255,.25)');q.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=q;g.fillRect(0,0,128,128);return _gt=new THREE.CanvasTexture(c)}
+const PAL={steel:'#aeb7c4',brass:'#b08d57',gold:'#f2c14e',silver:'#e6eaf0'};
+function ballCol(i){return S.cols[i]||S.col}
+/* Glow = the ball lights itself (emissive) + a soft additive halo sprite behind it, both tinted with the ball's color. */
+function applyBalls(){balls.forEach((m,i)=>{const c=new THREE.Color(ballCol(i));m.material.color.copy(c);if(m.material.emissive){m.material.emissive.copy(c);m.material.emissiveIntensity=S.glow?S.gi*(S.view==='desk'?.1:.5):0}
+  const h=halos[i];if(h){h.material.color.copy(c);h.visible=S.glow;h.material.opacity=Math.min(1,.2+S.gi*.35)*(S.view==='desk'?.45:1)}});
+  document.documentElement.style.setProperty('--sk',ballCol(0))}
+function fillCsel(){const sel=$('csel'),v=sel.value||'all';sel.innerHTML='<option value="all">All balls</option>'+Array.from({length:S.n},(_,i)=>`<option value="${i}">Ball ${i+1}</option>`).join('');sel.value=(v==='all'||+v<S.n)?v:'all'}
+function syncColorUI(){const v=$('csel').value;$('colp').value=(v==='all'||!S.cols[+v])?S.col:S.cols[+v];
+  $('glowT').checked=S.glow;$('gI').value=S.gi;$('v_gi').textContent=' '+(+S.gi).toFixed(2);
+  document.querySelectorAll('.sk').forEach(x=>x.classList.toggle('on',!S.cols.length&&PAL[x.dataset.s]===S.col));applyBalls()}
+const bb=document.createElement('div');
+bb.innerHTML=`<h2 class="px">Ball Appearance</h2>
+<label class="sl"><span>Apply color to</span><select id="csel"></select></label>
+<label class="sl"><span>Ball color (RGB picker)</span><input type="color" id="colp" value="#aeb7c4"></label>
+<label style="display:block;margin:4px 0"><input type="checkbox" id="glowT" checked style="width:auto"> Glow</label>
+<label class="sl"><span>Glow strength<b id="v_gi"></b></span><input type="range" id="gI" min="0" max="2" step=".05"></label>`;
+$('ctl').insertBefore(bb,topBox.nextSibling);fillCsel();
+$('csel').onchange=syncColorUI;
+$('colp').oninput=e=>{const v=$('csel').value;if(v==='all'){S.col=e.target.value;S.cols=[]}else S.cols[+v]=e.target.value;syncColorUI.call(null,0)};
+$('glowT').onchange=e=>{S.glow=e.target.checked;applyBalls()};
+$('gI').oninput=e=>{S.gi=+e.target.value;$('v_gi').textContent=' '+S.gi.toFixed(2);applyBalls()};
+document.querySelectorAll('.sk').forEach(b=>b.onclick=()=>{S.mat=b.dataset.s;S.col=PAL[b.dataset.s];S.cols=[];syncColorUI()});
+syncColorUI();
+
+/* ================= THEOREM II: view modes, collision echo, panel order, credits ================= */
+$('cv').style.touchAction='none';   // lets a finger drag a ball instead of scrolling the page
+/* Customize panel: physics settings first (open), everything else folded so it is short on a phone. */
+const sci=document.createElement('div');sci.innerHTML='<h2 class="px">Physics Settings</h2>';
+[...$('ctl').children].filter(el=>el.classList.contains('sl')).forEach(el=>sci.appendChild(el));
+const bd=$('bDef');sci.appendChild(bd);bd.style.margin='4px 0 16px';   // keep a reference: once it is moved into sci, document lookups can't find it
+function fold(div,open){const h=div.querySelector('h2'),d=document.createElement('details'),sm=document.createElement('summary');
+  d.open=open;sm.className='px';sm.textContent=h.textContent;h.remove();d.append(sm,...div.childNodes);div.appendChild(d)}
+[[sci,true],[topBox,false],[bb,false],[lgt,false],[ext,false]].forEach(([d,o])=>fold(d,o));
+$('ctl').append(sci,topBox,bb,lgt,ext);
+$('bTheme').onclick=()=>{const d=document.documentElement;d.dataset.theme=d.dataset.theme==='light'?'dark':'light';build()};
+let _wt;function woodTex(){if(_wt)return _wt;const c=document.createElement('canvas');c.width=c.height=512;const g=c.getContext('2d');g.fillStyle='#6b4a30';g.fillRect(0,0,512,512);
+  for(let k=0;k<260;k++){g.strokeStyle=`rgba(${30+Math.random()*40|0},${18+Math.random()*25|0},10,${.05+Math.random()*.12})`;g.lineWidth=1+Math.random()*3;const y=Math.random()*512;
+    g.beginPath();g.moveTo(0,y);g.bezierCurveTo(170,y+(Math.random()-.5)*14,340,y+(Math.random()-.5)*14,512,y+(Math.random()-.5)*10);g.stroke()}
+  _wt=new THREE.CanvasTexture(c);_wt.wrapS=_wt.wrapT=THREE.RepeatWrapping;_wt.repeat.set(5,3);return _wt}
+/* Three looks for the same scene: blueprint (glowing wireframe + grid, orbitable), desk (matte stand on a wooden desk, real shadows), flat (no shading, front view). */
+const VIEWS=['blueprint','desk','flat'];
+function setView(v){S.view=v;const st=$('stage');if(S.bp)st.style.setProperty('--bpc',S.bp);else st.style.removeProperty('--bpc');VIEWS.forEach(x=>st.classList.toggle('v-'+x,x===v));
+  oc.enableRotate=v!=='flat';if(v==='flat'){cam.position.set(0,-45,330);oc.target.set(0,-45,0);fitCam();oc.update()}
+  build();run(running)}
+$('stage').classList.add('v-'+S.view);
+$('mode').onclick=()=>setView(VIEWS[(VIEWS.indexOf(S.view)+1)%3]);$('mode').title='Switch view: blueprint / desk / flat';
+
+/* Collision echo: a ring spreads from each ball in the hit, then a weaker second ring. Harder hit = bigger and brighter. */
+const echoPool=Array.from({length:24},()=>{const m=new THREE.Mesh(new THREE.RingGeometry(.92,1,56),new THREE.MeshBasicMaterial({color:0x2ee6ff,transparent:true,depthWrite:false,depthTest:false,side:THREE.DoubleSide}));m.visible=false;m.renderOrder=7;sc.add(m);return m});
+let echoes=[];
+function echo(i,v){const t=performance.now();echoes.push({i,t,v},{i,t:t+110,v:v*.6});if(echoes.length>24)echoes=echoes.slice(-24)}
+function drawEchoes(){const now=performance.now(),DUR=520,hc=S.view==='blueprint'&&S.bp?parseInt(S.bp.slice(1),16):(document.documentElement.dataset.theme==='light'?0x0a7e9a:0x2ee6ff);echoes=echoes.filter(e=>now-e.t<DUR);
+  echoPool.forEach((m,k)=>{const e=echoes[k],b=e&&balls[e.i];if(!b||now<e.t){m.visible=false;return}
+    const a=(now-e.t)/DUR,big=Math.min(e.v,4);m.visible=true;m.material.color.setHex(hc);m.position.copy(b.position);m.scale.setScalar(S.r*K*(1.15+a*(.5+big*.55)));
+    m.material.opacity=(1-a)*Math.min(.9,.25+big*.2);m.quaternion.copy(cam.quaternion)})}
+
+$('bpc').oninput=e=>{S.bp=e.target.value;setView(S.view)};
+$('bpr').onclick=()=>{S.bp='';$('bpc').value='#2ee6ff';setView(S.view)};
+$('bClrMus').onclick=()=>{bgm.pause();bgm.removeAttribute('src');bgm.load();$('mus').value=''};
+const dev=$('dev');$('devB').onclick=()=>dev.classList.add('open');$('devX').onclick=()=>dev.classList.remove('open');
+dev.onclick=e=>{if(e.target===dev)dev.classList.remove('open')};addEventListener('keydown',e=>{if(e.key==='Escape')dev.classList.remove('open')});
+
+
+/* ================= MAIN LOOP ================= */
+const fmt=v=>(Math.abs(v)<5e-4?0:v).toFixed(3);let lastD=0;
+let last=performance.now();
+function loop(t){
+  requestAnimationFrame(loop);
+  const dt=Math.min((t-last)/1000,.05);last=t;
+  if(running){let rem=dt*S.speed;while(rem>1e-9){const h=Math.min(rem,STEP);cr.step(h);rem-=h}}
+  if(cr.hits.length){cr.hits.filter(h=>h.v>=.04).slice(0,10).forEach((h,k)=>{clack(h.v,k*.004);echo(h.a,h.v);echo(h.b,h.v)});cr.hits.length=0}
+  if(t-lastD>160){lastD=t;const s=cr.stats();$('rp').textContent=fmt(s.p);$('rk').textContent=fmt(s.ke);$('re').textContent=fmt(s.pe);$('rt').textContent=fmt(s.ke+s.pe)}
+  draw();
+}
+build();view();run(true);requestAnimationFrame(loop);
+</script>
+</body>
+</html>
